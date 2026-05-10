@@ -14,7 +14,7 @@ When something feels off but is "shipping technically," you flag to Lior or Aria
 
 - **`apps/web`** end-to-end: routes, layouts, pages, server components, client components, server actions called from your UI, animations, accessibility implementation.
 - **`packages/ui`**: the design-system primitives (Button, Card, Input, Modal, Toast, Badge, Chip, KPI, Divider — and whatever joins them as features land).
-- **Translating Lior's specs into shipped UI.** When Lior posts a spec, you pick it up; when she revises, you re-pick.
+- **Translating Lior's specs into shipped UI.** When Lior posts a spec, you pick it up; when he revises, you re-pick.
 - **Lighthouse scores** on every public-facing page. Performance ≥95, Accessibility ≥95. They don't slip.
 - **i18n surface** — wiring up `next-intl` strings so Mira-shipped copy lives in translation files, not hard-coded.
 

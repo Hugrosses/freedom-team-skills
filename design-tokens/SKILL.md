@@ -1,247 +1,245 @@
 ---
 name: design-tokens
-description: Use this skill before adding any color / typography / spacing / motion value, before approving any PR that introduces a new visual constant, and before writing the design-tokens spec for IAF-3. Triggers on every "what hex / what spacing / what easing" question.
+description: Use this skill before wiring any token into the Tailwind preset, before approving a PR that adds a token to packages/ui/tokens, and before answering "where do design values come from in Freedom?". Triggers on every token-related implementation question. For token *values* (which hex, which scale, which easing), defer to freedom-portal-designer.
 ---
 
-# Design Tokens — Freedom's Visual Vocabulary
+# Design Tokens — How Tokens Are Wired Into Freedom
 
-This is the source of truth for *what* visual values exist and *when* to use which. Mira ports the values into a Tailwind preset; you (Lior) decide which values exist in the first place.
+This skill is **implementation patterning**. It explains where tokens live in the codebase, how Tailwind reads them, the rules around adding or changing one, and how Lior's specs flow into Mira's preset.
 
-The system is deliberately small. Calm UI emerges from a tight palette and a small spacing scale, not from creative variation. If you find yourself wanting to add a token "just for this one case," resist — that's how systems drift into Salesforce-shape.
+**It does not list token values.** The canonical source of truth for *what* tokens exist (which colors, which typography scale, which spacing rhythm, which easing curves) is **`freedom-portal-designer`**, the senior product designer skill. Lior owns that source. This skill consumes it.
+
+If you find yourself wanting to write a hex code or a px value here, stop — that belongs in `freedom-portal-designer`. This file is about plumbing.
+
+---
+
+## Source-of-truth chain
+
+```
+freedom-portal-designer  (Lior's senior-designer mandate, "Brand & Design DNA")
+        │
+        ▼  Lior produces a spec for IAF-NNN, posted as a ticket comment
+design-tokens spec       (the spec format below)
+        │
+        ▼  Mira ports the spec into code
+packages/ui/tokens/tokens.css       ← CSS variables; the runtime values
+packages/ui/styles/tailwind-preset  ← reads the CSS vars, exposes utilities
+        │
+        ▼  Components consume utilities (or composite utilities like .glass / .card)
+apps/web                          ← Mira's pages, never bare hex / px
+```
+
+Every implementation file at the bottom of this chain points back through the chain. A reviewer should be able to read a class like `bg-navy-800` and trace it back to a CSS variable, and the variable's *value* back to a line in `freedom-portal-designer` (or to a Lior-specced delta with rationale).
 
 ---
 
 ## The non-negotiables
 
-1. **Tokens live as CSS variables** in `packages/ui/tokens/tokens.css`. Tailwind reads them via `packages/ui/styles/tailwind-preset.ts`.
-2. **Every visible value in code references a token.** No literal hex, no literal `12px` outside the token file. The lint rule (when it exists) catches this; until then, reviewers do.
-3. **New tokens require a spec entry** in this skill (or in the IAF ticket that introduces the token). No silent additions.
-4. **Locked tokens** (color, typography) require Hugo's approval to change. **Extensible tokens** (spacing, motion) can grow with team consensus.
-5. **Tokens are semantic, not decorative.** `--gold` is the brand accent — never used for "just a yellow." If you want a yellow, you don't have one; you have gold or you have the wrong instinct.
+1. **Tokens live as CSS variables** in `packages/ui/tokens/tokens.css`. Tailwind reads them via `packages/ui/styles/tailwind-preset.ts`. There is no second source.
+2. **No literal hex / px values in code.** Every visible value in `apps/web` and `packages/ui/components` references a token (`bg-navy-800`, `text-gold`, `rounded-md`). Composite utilities (`glass`, `card`, `btn-gold`, `chip`, `hairline`, `divider`) live in `packages/ui/styles/*.css` and are the only place `@apply` is permitted.
+3. **A token's value comes from `freedom-portal-designer`** unless Lior has posted a delta on a ticket with explicit rationale. Mira does not invent values; Mira ports them.
+4. **Adding a new token is a code change AND a skill change.** Mira's PR that adds a token in `tokens.css` must be paired with either an update to `freedom-portal-designer` (Lior owns that PR) or a citation of where the value already exists in `freedom-portal-designer`.
+5. **Locked vs extensible.** Color and typography are locked — Hugo signs off via `freedom-portal-designer` updates. Spacing, radius, motion, iconography are extensible — Lior approves additions, Aria is informed.
 
 ---
 
-## Color (locked)
+## Token namespaces and naming
 
-Ported from `docs/reference/freedom-portal.html` lines 24–41. These are the canonical values; do not adjust without a Hugo conversation.
+Tokens are grouped into namespaces; each lives as a CSS variable with a predictable prefix so the Tailwind preset can map them mechanically.
 
-### Navy scale (backgrounds, surfaces)
-
-| Token | Hex | Used for |
-|---|---|---|
-| `--navy-900` | `#070e1d` | App background, body |
-| `--navy-800` | `#0a1628` | Topbar, panel base |
-| `--navy-700` | `#101f38` | Card base 2nd-tier |
-| `--navy-600` | `#162845` | Card hover, glass overlay top |
-| `--navy-500` | `#1e3356` | Mid-tone surface, scrollbar thumb |
-
-Pick darker for the page chrome, lighter for elevated surfaces. The five-step scale is enough; you should not feel a need for `--navy-650`.
-
-### Gold scale (accent, brand identity)
-
-| Token | Hex | Used for |
-|---|---|---|
-| `--gold` | `#d4af37` | Primary accent — CTAs, active nav, signature |
-| `--gold-soft` | `#e7c96a` | Secondary accent — chip text, gold-text fade endpoint |
-| `--gold-hi` | `#f0d069` | Top of `gold-gradient`, hover highlight |
-| `--gold-dk` | `#9d7f1f` | Bottom of `gold-gradient`, embossed depth |
-| `--line` | `rgba(212,175,55,.14)` | Hairline borders, dividers (calm) |
-| `--line-strong` | `rgba(212,175,55,.28)` | Hairline borders, dividers (assertive) |
-
-Gold is the brand. Use it deliberately. A page with three gold elements is luxurious; a page with thirty is a casino.
-
-### Cream + muted (text)
-
-| Token | Hex | Used for |
-|---|---|---|
-| `--cream` | `#f5f1e8` | Primary body text on navy backgrounds |
-| `--muted` | `#a8b3c7` | Secondary body text, sub-headlines |
-| `--muted-2` | `#6c7891` | Tertiary text, captions, table headers |
-
-Three text shades. That's it. If you want "almost-cream-but-slightly-warmer" you don't.
-
-### State colors (limited)
-
-| Token | Hex | Used for |
-|---|---|---|
-| `--green` | `#3ecf8e` | Success badges, positive deltas, "signed" / "joined" / "active" states |
-| `--red` | `#ef6060` | Error badges, negative deltas, "failed" states |
-
-Yellow / orange / blue do not have tokens. Lior signs off if a state genuinely needs a fourth color, and only via an ADR.
-
----
-
-## Typography (locked)
-
-Two families, loaded via `next/font`:
-
-- **Cormorant Garamond** — serif. Weights 400, 500, 600, 700. Use for: headings (h1–h3), brand sigils, signature flourishes (the e-sign Cormorant flourish, the cover-letter greeting), the "Freedom" wordmark when on a navy background.
-- **Inter** — sans. Weights 300, 400, 500, 600, 700. Use for: body, UI copy, buttons, chips, table data, monospace fall-back when `mono` not specified.
-
-### Type scale (extensible — add when needed)
-
-| Token | Size | Line-height | Used for |
+| Namespace | Prefix | Example | Tailwind utility |
 |---|---|---|---|
-| `--text-xs` | 11–12px | 1.25 | Microcopy, table headers, badge text |
-| `--text-sm` | 13.5–14px | 1.4 | Body, UI labels, table cells |
-| `--text-base` | 15px | 1.5 | Long-form body |
-| `--text-lg` | 18px | 1.4 | Card titles |
-| `--text-xl` | 22px | 1.3 | Section heads |
-| `--text-2xl` | 28px | 1.2 | Page heads |
-| `--text-hero` | 48–56px | 1.05 | Landing hero, marketing |
+| Background / surface | `--navy-*` | `--navy-800` | `bg-navy-800` |
+| Brand accent | `--gold*` | `--gold`, `--gold-soft`, `--gold-deep` | `bg-gold`, `text-gold-soft`, etc. |
+| Text | `--cream`, `--muted*` | `--muted-2` | `text-muted-2` |
+| Border / line | `--line`, `--line-strong` | — | `border-line` |
+| State | `--success`, `--warning`, `--danger` | — | `text-danger`, `bg-success/10` |
+| Typography family | `--font-serif`, `--font-sans`, `--font-mono` | — | `font-serif` |
+| Type scale | `--text-*` | `--text-lg` | `text-lg` |
+| Spacing | tailwind built-in (`--space-*` if we ever override) | — | `p-3`, `gap-4` |
+| Radius | `--radius-*` | `--radius-md` | `rounded-md` |
+| Motion duration | `--motion-*` | `--motion-base` | `duration-base` |
+| Motion easing | `--ease-*` | `--ease-out` | `ease-out` |
 
-Letter-spacing: `-0.01em` on Cormorant headings (`.serif` utility); default for Inter.
+Naming conventions:
 
-Headings always use Cormorant. UI surface text always uses Inter. The mix is the brand signature; don't muddle it.
+- Lowercase, kebab-case.
+- Suffix `-strong` / `-soft` / `-deep` for variants of the same hue, *not* numeric scales (we use numeric only for backgrounds: `--navy-900..500`).
+- Prefix `--font-` for type families. Prefix `--text-` for sizes. Don't conflate.
+- The Tailwind preset utility name should be derivable from the variable name without a lookup table.
 
-### Tabular numerics
-
-For aligned monetary values and ratios in tables, use the `.mono` utility (`ui-monospace, SFMono-Regular, Menlo`). Don't reach for Cormorant numerals in dashboards.
-
----
-
-## Spacing (extensible)
-
-Tailwind's default scale is fine but Freedom uses a *narrower* effective range:
-
-- **Inside a card / row:** 4 / 8 / 12 / 14 / 16 / 18 / 24 (px-equivalents `1 1.5 2 3 3.5 4 4.5 6` in Tailwind units).
-- **Between cards / sections:** 24 / 32 / 48 / 64 (px). Larger gaps are reserved for landing-style hero sections.
-- **Layout grid:** 12-column on desktop, 4-column on mobile. Gutter 16–24px.
-
-Avoid 5px / 7px / 11px increments. The rhythm comes from staying on the scale.
+When `freedom-portal-designer` introduces a token name, this skill mirrors the namespace; if the prefix collides with an existing namespace, that's a question for Lior (see "propose, don't assume" below).
 
 ---
 
-## Border radius (locked)
+## Tailwind preset shape
 
-| Token | Value | Used for |
-|---|---|---|
-| `--radius-sm` | 6px | `kbd`, badges, chips |
-| `--radius-md` | 10px | Inputs, buttons |
-| `--radius-lg` | 14px | Toasts, smaller cards |
-| `--radius-xl` | 18px | Cards, primary panels |
-| `--radius-2xl` | 22px | Modals, hero panels |
+`packages/ui/styles/tailwind-preset.ts` reads `tokens.css` via CSS-variable references:
 
-`radius-full` (`999px`) for pill chips and avatars only. Avoid arbitrary `border-radius: 7px` or `rounded-[5px]`.
+```ts
+// Sketch — Mira finalizes during IAF-3 implementation.
+import type { Config } from "tailwindcss";
 
----
+export const preset: Partial<Config> = {
+  theme: {
+    extend: {
+      colors: {
+        navy: {
+          900: "var(--navy-900)",
+          800: "var(--navy-800)",
+          700: "var(--navy-700)",
+          600: "var(--navy-600)",
+          500: "var(--navy-500)",
+        },
+        gold: {
+          DEFAULT: "var(--gold)",
+          soft: "var(--gold-soft)",
+          deep: "var(--gold-deep)",
+        },
+        cream: "var(--cream)",
+        muted: {
+          DEFAULT: "var(--muted)",
+          2: "var(--muted-2)",
+        },
+        line: "var(--line)",
+        "line-strong": "var(--line-strong)",
+        success: "var(--success)",
+        warning: "var(--warning)",
+        danger: "var(--danger)",
+      },
+      fontFamily: {
+        serif: ["var(--font-serif)"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+      },
+      fontSize: {
+        // bound to --text-* tokens once Lior's spec lands
+      },
+      borderRadius: {
+        // bound to --radius-* tokens once Lior's spec lands
+      },
+      transitionDuration: {
+        fast: "var(--motion-fast)",
+        base: "var(--motion-base)",
+        slow: "var(--motion-slow)",
+      },
+      transitionTimingFunction: {
+        out: "var(--ease-out)",
+        "in-out": "var(--ease-in-out)",
+        spring: "var(--ease-spring)",
+      },
+    },
+  },
+};
+```
 
-## Elevation (locked)
-
-We use **two** elevation patterns. Resist the urge for a third.
-
-1. **Hairline border + glass background.** `.glass` utility: gradient navy with `backdrop-filter: blur(12px)` + `border: 1px solid var(--line)`. This is the default surface.
-2. **Glow gold.** `.glow-gold` utility: soft gold rim + outer drop-shadow. Used sparingly — featured plan card, the "you're set" finalize moment, the signed-proposal celebration.
-
-No `box-shadow: 0 1px 2px rgba(0,0,0,0.05)`. Material-design-style elevation breaks the brand.
-
----
-
-## Motion (extensible)
-
-Motion language is calm: short durations, subtle easing, no bouncing. Three duration tokens, three easing tokens, in that combination.
-
-### Durations
-
-| Token | ms | Used for |
-|---|---|---|
-| `--motion-fast` | 150 | Hover state, focus ring, button press |
-| `--motion-base` | 250 | Modal open, fade-in, panel slide |
-| `--motion-slow` | 400 | Page transitions (rare), animated charts |
-
-Anything longer is a celebration moment (the confetti at signing, the compliance-review animation). Don't reach for slow durations as a default.
-
-### Easings
-
-| Token | Curve | Used for |
-|---|---|---|
-| `--ease-out` | `cubic-bezier(.2, .9, .3, 1)` | Default — appears, settles |
-| `--ease-in-out` | `cubic-bezier(.4, 0, .2, 1)` | State transitions both directions |
-| `--ease-spring` | `cubic-bezier(.34, 1.56, .64, 1)` | Reserved for the celebration moments only |
-
-No ease-linear. No abrupt cuts. Motion respects the brand's "calm" descriptor.
-
-### Forbidden
-
-- Bouncing buttons.
-- Shimmer skeletons (use the existing fade-in pattern).
-- Auto-playing carousels.
-- Parallax on scroll.
-
----
-
-## Iconography (locked)
-
-**Lucide** is the only icon set. Loaded via the Lucide CDN in the mockup; via `lucide-react` in code.
-
-Rules:
-
-- Stroke width: default Lucide (`1.5`).
-- Sizes: `w-3.5 h-3.5` (small), `w-4 h-4` (medium, default), `w-5 h-5` (large), `w-7 h-7` (hero / KPI cards). Don't invent new sizes.
-- Color: inherit from text (`color: var(--cream)` body, `color: var(--gold)` accent, `color: var(--muted)` secondary).
-- No emoji in user-facing UI. Even error states. A Lucide icon or nothing.
-
-If a needed icon isn't in Lucide, ask Aria; we don't mix icon sets.
+The preset names track `freedom-portal-designer` token names exactly. If `freedom-portal-designer` says `--gold-soft`, the preset exposes `text-gold-soft`. Mira does not invent shorthand.
 
 ---
 
-## Component-specific token applications
+## Composite utility CSS
 
-These aren't new tokens; they're vetted *combinations* of the tokens above. Codified here so Mira doesn't reinvent per component.
+`packages/ui/styles/composites.css` is the only file where `@apply` is permitted. It defines reusable visual signatures so Mira doesn't repeat 12 utilities per card:
 
-### `.card`
+```css
+/* sketch — exact rules come from Lior's spec on IAF-3 and follow-ups */
 
-Background: gradient `rgba(22,40,69,.8)` → `rgba(16,31,56,.8)`.
-Border: `1px solid var(--line)`.
-Radius: `var(--radius-xl)` (18px).
-Hover: border becomes `var(--line-strong)`, lifts `translateY(-2px)`, transition `all 200ms ease-out`.
+.glass {
+  @apply backdrop-blur-md border border-line bg-gradient-to-b from-navy-600/65 to-navy-700/55;
+}
 
-### `.btn-gold`
+.card {
+  /* Lior to specify the exact gradient + radius in the IAF-3 spec */
+}
 
-Background: `linear-gradient(180deg, var(--gold-hi), var(--gold))`.
-Color: `var(--navy-800)` (`#0a1628`).
-Font: Inter 600.
-Hover: `translateY(-1px)`, `filter: brightness(1.05)`, gold drop-shadow.
+.btn-gold {
+  /* Lior to specify gradient direction, hover behavior, focus ring */
+}
 
-### `.chip`
+.chip { /* … */ }
+.hairline { /* … */ }
+.divider { /* … */ }
+```
 
-Background: `rgba(212,175,55,.06)`.
-Border: `1px solid var(--line-strong)`.
-Color: `var(--gold-soft)`.
-Padding: 4 / 10 (px). Radius: full.
+Why composites: a "card" appears 50 times across Freedom; if every page composes 8 utilities to render one, drift is inevitable. Composites are the tax we pay to prevent drift.
 
-### `.hairline`
+When Lior adds a new composite, this file gains a new class; the skill itself does not need to re-document the composite (`freedom-portal-designer` is the source).
 
-Border-top: `1px solid var(--line)`. Used between sections within a card.
+---
 
-### `.divider`
+## Propose, don't assume — when `freedom-portal-designer` underspecifies
 
-Background: `linear-gradient(90deg, transparent, var(--line-strong), transparent)`. Height 1px. The "branded hr."
+`freedom-portal-designer` is intentionally high-level. There will be moments where it underspecifies for an implementation question — for example:
+
+- Two token names that collide ("`--gold-hi` from one source, `--gold-soft` from another, same hex").
+- A scale gap (a `--text-15` you "need" between `--text-14` and `--text-16`).
+- A composite utility that combines tokens whose interaction `freedom-portal-designer` doesn't address.
+
+In every such case, **Lior proposes; nobody assumes.**
+
+A proposal is:
+
+1. Posted on the relevant ticket as a comment from Lior.
+2. Marked explicitly: `**PROPOSAL** — fills gap in freedom-portal-designer §<section>.`
+3. Cites the underlying rationale (the source line in `freedom-portal-designer` that's silent on this, plus design reasoning).
+4. Requests review from Hugo + Aria. Held until both approve.
+5. On approval: Lior updates `freedom-portal-designer` so the next ambiguity gets resolved at the source. Mira ports.
+
+What is **not** acceptable:
+
+- Mira inferring a value because "it's obviously this hex."
+- Lior posting a token without rationale and treating Mira's silence as approval.
+- Anyone updating `tokens.css` without the proposal trail.
+
+Treat this skill's "propose, don't assume" rule the same way `audit-logging` treats the audit-event contract: every token decision is a row in the trail, and the trail must be complete to be useful.
 
 ---
 
 ## Adding a token
 
-When you genuinely need a new value:
+When `freedom-portal-designer` already has the value:
 
-1. **Confirm it can't be expressed with existing tokens.** Most "new" needs are someone wanting `--gold-soft` instead of `--gold`.
-2. **If color or typography:** ping Hugo via Aria. These are locked.
-3. **If spacing / motion / radius:** propose in the PR, get Mira's lift, ship in the token file with a note.
-4. **Update this skill** in the same PR. The skill stays the source of truth.
-5. **Update the Tailwind preset** so `bg-<token>` / `text-<token>` / `rounded-<token>` work.
+1. Mira opens a PR adding the variable to `tokens.css`, expanding the Tailwind preset, and (if applicable) the composite class.
+2. PR description cites the line in `freedom-portal-designer` where the value comes from.
+3. Lior reviews for fidelity (was the right hex picked? does the namespace fit?). Aria reviews for plumbing.
 
-Anti-pattern: adding a token in `tokens.css` without updating this skill or the preset. Future you will find a hex with no provenance and have to guess.
+When `freedom-portal-designer` does not have the value yet:
+
+1. Lior posts a proposal on the ticket per "Propose, don't assume" above.
+2. On approval, Lior updates `freedom-portal-designer` first.
+3. Then Mira's PR cites the new section. (No "land both at once" shortcut — the source-of-truth chain matters.)
 
 ---
 
 ## What "done" looks like for IAF-3
 
-The audition ticket. Lior's spec, posted as a comment on IAF-3, contains:
+IAF-3 is split conceptually into two phases inside one ticket:
 
-1. The full token table (color, typography, spacing, radius, motion, iconography) — copy-pasted from this skill, with any project-specific deltas explicitly called out (there shouldn't be any for phase 1).
-2. The component-specific applications above (`.card`, `.btn-gold`, `.chip`, `.hairline`, `.divider`).
-3. Sample renders: a card with a button and a chip, on the navy background, in Cormorant + Inter — link to a screenshot or a Codepen if you can. Otherwise an inline ASCII / annotated description that Mira can implement against.
-4. A note for Mira on the Tailwind preset: which utilities to expose (`bg-navy-{900..500}`, `text-cream`, `text-muted`, `text-muted-2`, `text-gold`, `text-gold-soft`, `border-line`, `border-line-strong`, `rounded-{sm..2xl}`, `font-serif`, `font-mono`, plus the composite `glass` / `card` / `btn-gold` / `chip` / `hairline` / `divider` utilities).
-5. Open questions, if any. Surface them — don't bury.
+**Phase A — Lior's audition: spec authoring.**
+Lior reads `freedom-portal-designer` and produces the v2 token spec for Freedom Portal as a comment on IAF-3. The spec:
 
-That spec lets Mira ship IAF-3 in a single sitting. That's the ergonomic target.
+1. Names every token in every namespace (color, typography, spacing, radius, motion, iconography).
+2. Cites the source line(s) in `freedom-portal-designer` for each value.
+3. Marks every gap (any place `freedom-portal-designer` is silent or contradictory) as a `**PROPOSAL**` with rationale, per "Propose, don't assume."
+4. Provides composite utilities (`.glass`, `.card`, `.btn-gold`, `.chip`, `.hairline`, `.divider`) with the exact `@apply` recipe Mira will port.
+5. Open questions surfaced explicitly, never buried.
+
+Phase A reviewers: **Hugo + Aria**. Both must explicitly approve. No "silent acceptance after 24h."
+
+**Phase B — Mira's port.**
+Once Phase A is approved, Mira ports the spec into `packages/ui/tokens/tokens.css`, `packages/ui/styles/tailwind-preset.ts`, and `packages/ui/styles/composites.css`. PR description cites the approved spec comment.
+
+Phase B reviewers: **Lior** (fidelity) + **Aria** (plumbing).
+
+If Lior's spec is clean enough that Phase B is fully decoupled, Aria splits the ticket into IAF-3 (spec) and IAF-3.5 (port). Default: stays single-ticket; the split is a judgment call after the spec lands.
+
+---
+
+## Anti-patterns we don't ship
+
+- **Hex / px values in `apps/web` or `packages/ui/components`.** They live in `tokens.css` only.
+- **Tokens added without a citation back to `freedom-portal-designer` or a Lior proposal.** Untraceable values rot.
+- **`@apply` outside `packages/ui/styles/`.** Component code uses utility classes inline.
+- **A second source of token values** (a Notion doc, a Figma file, a comment on a closed PR). The chain `freedom-portal-designer` → spec → tokens.css is the only path.
+- **Tailwind preset names that don't mirror the variable names.** `bg-darkBlue900` for `--navy-900` is a smell.
+- **Lior approving Phase B in `freedom-portal-designer`'s name without first posting the spec on the ticket.** The trail is the contract.

@@ -161,8 +161,13 @@ Same template as Aria's ADRs. Live in `docs/adr/` alongside engineering ADRs, na
 When Hugo activates you, your opening reply should:
 
 1. Confirm you've read all attached skills and **count them**: 4 specialty (`freedom-portal-designer`, `design-tokens`, `component-spec`, `accessibility-audit`) + 4 shared (`working-with-hugo`, `freedom-product-brief`, `tech-stack-canon`, `team-roster`) = **8**. If your count differs, stop and flag it before proceeding — your skill set is not what was intended.
-2. State, in 3–5 lines, your understanding of Freedom's brand and visual posture — what you'll defend, what you'll evolve, what you'll ask Hugo about. Reference the mockup as ground truth.
+2. State, in 3–5 lines, your understanding of Freedom's brand and visual posture — what you'll defend, what you'll evolve, what you'll ask Hugo about. Reference both `freedom-portal-designer` (your senior-designer mandate, the v2 vision) and the v1 mockup at `docs/reference/freedom-portal.html` (the prior incremental build) as the two anchors you'll triangulate between.
 3. Ask up to three questions only if material. Otherwise, ask zero.
-4. Propose your first concrete output: a design-tokens spec for IAF-3 (port the mockup's `:root` block into a documented token set Mira can implement). Post the spec as a comment on IAF-3. Once Aria nods, Mira picks it up.
+4. Propose your first concrete output: **the v2 token spec for IAF-3, posted as a comment on the ticket**. Author it per the format in `design-tokens` skill (Phase A — "what done looks like for IAF-3"). The spec implements the v2 mandate from `freedom-portal-designer`; it does not port v1.
 
-That spec is your audition. Make it good.
+   - Cite source lines in `freedom-portal-designer` for every token value.
+   - Wherever `freedom-portal-designer` underspecifies (e.g., the `--gold-soft` vs `--gold-hi` collision against the v1 mockup, the `--muted` scale shuffle), follow the **propose-don't-assume** rule from `design-tokens`: post each gap as an explicit `**PROPOSAL**` with rationale, citing the source-line that's silent.
+   - Required reviewers on the spec: **Hugo + Aria**. Both must explicitly approve. No silent acceptance.
+   - On approval, Mira ports (Phase B). If your spec is clean enough to decouple, Aria splits IAF-3 / IAF-3.5; otherwise it stays single-ticket.
+
+That spec is your audition. Make it good — it's the moment v2 stops being a memo and becomes the codebase's first paint.
