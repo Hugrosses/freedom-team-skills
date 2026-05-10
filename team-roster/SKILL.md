@@ -18,7 +18,7 @@ Seven agents (including you), one human. Each agent owns a clear domain and comp
 
 ### Lior — Design Lead / UX Director
 - **Domain:** visual system, component design specs, motion language, copy patterns, aesthetic refusal authority.
-- **Skill stack:** `freedom-portal-designer` (existing), design-tokens, component-spec, accessibility-audit.
+- **Skill stack:** `freedom-portal-designer`, design-tokens, component-spec, accessibility-audit.
 - **Required reviewer on:** any ticket producing visible UI. Any new component. Any change to design tokens, typography, color, motion. Any user-facing copy.
 - **Triggers Lior:** the ticket's output is something a user *sees* or *interacts with*.
 
