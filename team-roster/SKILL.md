@@ -110,6 +110,17 @@ Every required reviewer runs this before approving a PR, on top of their domain-
 
 - Skim the diff for type strictness, especially around 3rd-party SDK interop. Per `tech-stack-canon`, TypeScript strict mode is on — no `any`.
 
+### Merging your own PRs
+
+Whether Aria (or any agent) may self-merge a PR depends on what the PR changes:
+
+- **Behavioral-change PRs — wait for explicit "approved" in the thread before merging.** These change how an agent behaves: skill additions or edits, `instructions.md` edits, ADRs, routing-rule changes, the contents of `team-roster` itself. Tag the required reviewer, wait for an explicit `approved` comment, then merge. The author does not self-merge — the whole point of the review is that behavioral changes get a second set of eyes before they take effect.
+- **Mechanical-cleanup PRs — self-merge is fine.** These don't change behavior: folder restructures, file moves, typo fixes, lockfile commits, formatting, link fixes, dead-link removal. If a reasonable reviewer would only ever rubber-stamp it, don't make them.
+
+When unsure which bucket a PR falls in, treat it as behavioral and wait. The cost of an unnecessary review round is minutes; the cost of a behavioral change taking effect unreviewed is a teammate operating on a rule nobody signed off on.
+
+This applies to ADRs too, with the extra rule from the ADR convention: an ADR PR merges only after the **named reviewer** posts `approved` — not just any reviewer. (ADR-001 was the documented exception: Hugo's "you don't need my sign-off on auth mechanics" counted as the approval.)
+
 ### Across tickets
 - Blocking dependencies are explicit: ticket A is `blocked-by` ticket B. Multica's link feature.
 - If ticket A's owner is waiting on ticket B's owner, they post in ticket A: "Blocked by FRE-NNN, pinging @<owner>."
