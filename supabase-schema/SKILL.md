@@ -229,6 +229,20 @@ If you find yourself adding a row that doesn't belong to a single advisor, stop 
 
 ## Migrations
 
+### `supabase/config.toml` — verify against the installed CLI before pushing
+
+`supabase db push` validates `supabase/config.toml` against the schema of the **CLI version actually installed**, not against whatever a tutorial or an older project used. A stale key fails the push before a single migration runs. Don't hand-write `config.toml` from memory — generate it with `supabase init` on the current CLI, then diff against what you intended.
+
+Known stale keys / values that have already bitten us (IAF-5, 2026-05) — do **not** carry these forward:
+
+| Stale | Status | Correct |
+|---|---|---|
+| `auth.refresh_token_rotation_enabled = true` | Key not recognized by current CLI | Remove it. Rotation behavior is managed in the Supabase dashboard / newer config keys. |
+| `auth.refresh_token_reuse_interval = 10` | Key not recognized by current CLI | Remove it. |
+| `db.major_version = 15` | Postgres 15 is no longer the default | `db.major_version = 17` |
+
+Before any migration ticket: run `supabase --version`, then `supabase db push --dry-run` (or the lint the CLI offers) and confirm `config.toml` parses clean. If a key you need genuinely isn't supported, that's a question for Aria — don't silently drop a security-relevant setting; confirm where its behavior moved.
+
 ### Naming & location
 
 - `supabase/migrations/YYYYMMDDHHMMSS_<slug>.sql`
