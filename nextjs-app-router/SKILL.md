@@ -29,33 +29,34 @@ Inside `apps/web/`:
 ```
 apps/web/
 ├── app/
-│   ├── (public)/                # Routes that don't require auth
-│   │   ├── page.tsx             # Landing
-│   │   └── _components/
-│   ├── (advisor)/               # Routes for authenticated advisors
-│   │   ├── layout.tsx           # AppShell wrapping
-│   │   ├── home/page.tsx
-│   │   ├── leads/
-│   │   │   ├── page.tsx
-│   │   │   └── [id]/page.tsx
-│   │   ├── proposals/page.tsx
-│   │   ├── clients/page.tsx
-│   │   └── _components/
-│   ├── (client)/                # Routes for client portal (P1)
-│   │   ├── layout.tsx
-│   │   └── ...
-│   ├── api/                     # Webhooks only — never user-handling
+│   ├── [locale]/                # Path-based locale segment — fr-CH default, en alongside
+│   │   ├── (public)/            # Routes that don't require auth
+│   │   │   ├── page.tsx         # Landing
+│   │   │   └── _components/
+│   │   ├── (advisor)/           # Routes for authenticated advisors
+│   │   │   ├── layout.tsx       # AppShell wrapping
+│   │   │   ├── home/page.tsx
+│   │   │   ├── leads/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/page.tsx
+│   │   │   ├── proposals/page.tsx
+│   │   │   ├── clients/page.tsx
+│   │   │   └── _components/
+│   │   ├── (client)/            # Routes for client portal (P1)
+│   │   │   ├── layout.tsx
+│   │   │   └── ...
+│   │   ├── layout.tsx           # Locale layout — sets <html lang>, loads messages
+│   │   └── not-found.tsx
+│   ├── api/                     # Webhooks only — never user-handling, locale-agnostic
 │   │   └── webhooks/
 │   │       ├── stripe/route.ts
 │   │       └── docuseal/route.ts
-│   ├── actions/                 # Server Actions, organized by surface
+│   ├── actions/                 # Server Actions, organized by surface — locale-agnostic
 │   │   ├── leads.ts
 │   │   ├── proposals.ts
 │   │   └── ...
-│   ├── _layout-bits/            # Layout-level helpers (route groups, etc.)
 │   ├── globals.css
-│   ├── layout.tsx               # Root layout
-│   └── not-found.tsx
+│   └── layout.tsx               # Root layout — minimal, delegates to [locale]/layout.tsx
 ├── messages/
 │   ├── en.json
 │   └── fr-CH.json               # Default locale
@@ -63,7 +64,13 @@ apps/web/
 └── public/                      # Static assets
 ```
 
-### Route groups
+### Locale and route groups
+
+Locale is **path-based**: every user-facing route lives under `app/[locale]/`, e.g. `app/[locale]/(advisor)/leads/page.tsx`, served at `/fr-CH/leads` or `/en/leads`. Path-based (not cookie- or header-based) for SEO and shareability — a lead can send a colleague a `/fr-CH/...` link and it renders in French.
+
+`api/` and `actions/` sit *outside* `[locale]/` — they're locale-agnostic (webhooks and mutations don't have a UI locale).
+
+Route groups, nested under `[locale]/`:
 
 - `(public)` — unauthenticated. Landing, marketing, signup entry, auth callbacks.
 - `(advisor)` — authenticated as advisor. AppShell layout (sidebar + topbar + mobile nav).
@@ -163,7 +170,7 @@ The `form action={...}` pattern is preferred over `onClick` for mutations — it
 ### Page (Server Component, async)
 
 ```tsx
-// app/(advisor)/leads/page.tsx
+// app/[locale]/(advisor)/leads/page.tsx
 import { listLeadsForAdvisor } from "@/packages/db/queries/leads";
 import { LeadsTable } from "./_components/LeadsTable";
 
@@ -177,7 +184,7 @@ export default async function LeadsPage() {
 ### Loading boundary
 
 ```tsx
-// app/(advisor)/leads/loading.tsx
+// app/[locale]/(advisor)/leads/loading.tsx
 import { LeadsTableSkeleton } from "./_components/LeadsTableSkeleton";
 
 export default function LeadsLoading() {
@@ -190,7 +197,7 @@ Skeletons match the layout footprint of the loaded state — no spinner-on-blank
 ### Error boundary
 
 ```tsx
-// app/(advisor)/leads/error.tsx
+// app/[locale]/(advisor)/leads/error.tsx
 "use client";
 import { logger } from "@/packages/lib/logger";
 
@@ -205,7 +212,7 @@ Error boundaries are always Client Components (Next.js requirement), they always
 ### Layout (Server Component)
 
 ```tsx
-// app/(advisor)/layout.tsx
+// app/[locale]/(advisor)/layout.tsx
 import { AppShell } from "@/packages/ui/components/AppShell";
 import { getAdvisorContext } from "@/packages/db/queries/advisor";
 

@@ -22,7 +22,7 @@ When something feels off but is "shipping technically," you flag to Lior or Aria
 
 - **Visual decisions.** Lior owns those. If a spec is missing or ambiguous, ask Lior before guessing — you do not fill the gap with "what feels right."
 - **Schema / RLS / server actions that don't already exist.** Kai writes them; you consume them via typed query helpers in `packages/db/queries`.
-- **AI calls.** Vera writes the services; you call them server-side and render the result.
+- **AI calls.** Vera writes the services; you call them server-side and render the result. If an AI service's output shape changes under you (a field renamed, a structured-output schema revised), that's a contract break — don't silently adapt the render or fall back to a guess. Escalate to Vera + Aria on the ticket, and treat it as blocking until the shape is re-agreed. The render follows the service's typed contract; you don't reverse-engineer it.
 - **Third-party integrations.** Sasha writes the SDK glue; you render the integration's data, not the API.
 - **Brand and product strategy.** Recommend, don't decide.
 
