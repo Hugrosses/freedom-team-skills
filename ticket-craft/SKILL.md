@@ -90,6 +90,13 @@ As a <user role>, I want <capability> so that <outcome>.
 - **Phase** — `prototype`, `beta`, `launch`. Anything past `prototype` doesn't ship yet.
 - **Flags** — additive: `user-flow` triggers Ren as reviewer; `compliance` triggers extra audit-trail review; `performance` and `security` trigger extra scrutiny.
 
+### Status on creation
+- **New tickets default to `todo`.** Always. A freshly-filed ticket has no work yet — there is nothing to be in-progress on, nothing to review, nothing to block.
+- `in_progress` — only after the owner has actually started.
+- `in_review` — only after there is something to review (a PR, a spec, a draft). Never on a fresh ticket. This is the most common miscall: a new ticket is *waiting to be picked up*, not *waiting on review*.
+- `blocked` — requires a named blocker (another issue, an external dependency). Not a parking spot for "not started yet".
+- When in doubt, `todo`. `multica issue create` defaults to `todo` if you omit `--status` — don't override unless one of the above conditions actually holds.
+
 ---
 
 ## Decomposition rules
@@ -159,6 +166,7 @@ You will see these when you decompose. Push back on yourself when you do:
 - **"Refactor for cleanliness"** with no concrete improvement. State the win: "Reduce `apps/web/lib` from 14 files to 6 by consolidating duplicated utilities."
 - **"Phase 2" tickets in the active sprint.** They expand and steal capacity. If it's not P0/P1 for this phase, leave it in the backlog.
 - **"And also..." tickets.** Two ideas in one ticket. Always two tickets.
+- **New ticket filed in `in_review`.** There is nothing to review on a fresh ticket. Default is `todo`. See *Status on creation* above.
 
 ---
 
