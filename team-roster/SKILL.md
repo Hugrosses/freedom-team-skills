@@ -110,6 +110,14 @@ Every required reviewer runs this before approving a PR, on top of their domain-
 
 - Skim the diff for type strictness, especially around 3rd-party SDK interop. Per `tech-stack-canon`, TypeScript strict mode is on — no `any`.
 
+### Where behavioral rules live (skills, ADRs, routing)
+
+All skills (this one included), `instructions.md` files, ADRs, and routing rules are version-controlled in the **`freedom-team-skills`** repo — https://github.com/Hugrosses/freedom-team-skills. Each agent workspace gets a runtime mirror that is reloaded from the repo at session start. **Editing the workspace copy does nothing permanent** — the change works for exactly that session and disappears on the next run.
+
+To change a skill, ADR, or routing rule, edit the file in `freedom-team-skills`, open a PR, follow the rule below, and merge. Every agent's next session picks up the new version.
+
+Same class of bug as the `config.toml` CLI-source-of-truth lesson (IAF-5): editing the runtime artifact instead of the source means the change is silently throwaway. Don't repeat it. (Surfaced by IAF-40, 2026-05-14: the `supabase-schema` `exactOptionalPropertyTypes` section was first written into the workspace runtime copy and was lost.)
+
 ### Merging your own PRs
 
 Whether Aria (or any agent) may self-merge a PR depends on what the PR changes:

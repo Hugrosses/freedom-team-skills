@@ -289,6 +289,49 @@ Never write a single migration that locks a large table while computing values.
 
 ---
 
+## Query-helper types — `exactOptionalPropertyTypes` and the conditional-spread pattern
+
+`tsconfig.base.json` has `exactOptionalPropertyTypes: true`. That flag makes `foo?: T` reject **explicit `undefined`** — you can omit the key, but you can't assign `undefined` to it. The distinction matters at the DB boundary: an absent key falls through to the column default, an explicit `undefined` would not. The flag exists to keep those two states unconfused; do not turn it off.
+
+This bites whenever a forwarded `input.foo` is *itself* optional and gets dropped into a payload literal. The canonical fix — used in `packages/db/queries/leads.ts:164` (`archiveLead` writing the `lead_events.payload` jsonb) — is to spread the property in conditionally:
+
+```ts
+// Type error under exactOptionalPropertyTypes:
+payload: { type: "archived", reason: input.reason }
+
+// Canonical pattern:
+payload: {
+  type: "archived",
+  ...(input.reason !== undefined && { reason: input.reason }),
+}
+```
+
+### `T | null` vs `foo?: T` — they are different things
+
+This is the most common confusion and worth its own rule. Nullable columns and optional properties look similar in the type system but mean different things at the DB:
+
+| Target shape | Meaning | Tool to use |
+|---|---|---|
+| `foo?: T` | Truly optional. Omitting and `undefined` are distinguishable; omitting lets the column default apply. | Conditional spread. |
+| `foo: T \| null` | Nullable. The column accepts `null` as a real value; "missing" is not a state. | `input.foo ?? null`. |
+
+`?? null` is the right tool for nullable columns and nullable jsonb. Conditional-spread on a `T | null` target is wrong — it would silently omit the key when you wanted an explicit `null`. Don't mix them.
+
+Examples from `packages/db`:
+
+- `lead_events.payload` discriminated union, `reason?: string` branch → **conditional-spread** (`leads.ts:164`).
+- `lead_events.actor_id` is `text | null`, `audit_events.metadata`, `audit_events.ip`, `audit_events.user_agent` → **`?? null`**.
+
+### What we don't do
+
+- **Widen the type** (`reason: string | undefined` in the target shape). Defeats the flag and lets a real bug recur.
+- **Cast with `as`.** Silently moves the bug to runtime; `audit_events` row ends up with an unintended shape.
+- **Disable `exactOptionalPropertyTypes`.** It has already caught real bugs (IAF-2, IAF-40). It is locked per `tech-stack-canon`; relaxing it needs an ADR.
+
+This rule applies to every Insert/Update literal, discriminated-union payload, and forwarded-input shape in `packages/db`. Audit was IAF-40 (2026-05-14); `leads.ts:164` is the reference example.
+
+---
+
 ## Anti-patterns we don't do
 
 These are real patterns I've watched ship to Freedom-shaped systems and regret:
