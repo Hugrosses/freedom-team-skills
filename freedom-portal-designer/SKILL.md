@@ -102,9 +102,13 @@ Borders
 
 Semantic (sparingly, only for state)
   success       #3ecf8e
-  warning       #f0d069
-  danger        #dc2626 / #fca5a5
+  warning       #e0a020   amber — distinct hue from --gold-soft so brand-accent and warning-state never collapse
+  danger-fg     #fca5a5   error text on dark navy (passes AA against --navy-800/900)
+  danger-bg     rgba(220,38,38,.12)   error chip / banner background (12% alpha derived from danger-loud)
+  danger-loud   #dc2626   destructive-confirmation only — never default error text (fails AA body on navy)
 ```
+
+`--warning` must not share a hex with `--gold-soft`. Brand-accent and state colors are never the same value — see §5.5. `--danger` is split into named foreground and background tokens because the dark red fails AA as body text on navy; the split removes a class of "which one do I use" bug at the implementation seam.
 
 ### The 60-30-10 rule
 
@@ -120,7 +124,7 @@ Two faces, strict scale, tabular numerals.
 
 - **Cormorant Garamond** (serif) — display moments. H1, hero numbers, prices, eyebrows on landing.
 - **Inter** (sans) — UI body, labels, navigation, dense data.
-- **Mono** (any tabular sans-mono) — IDs, ISINs, currency amounts.
+- **Mono** — `ui-monospace, 'SF Mono', 'Cascadia Mono', 'Menlo', 'Consolas', monospace`. OS-native stack, no webfont. Used for IDs, ISINs, account numbers, and any identifier where fixed-width identity matters. Currency amounts in body prose stay in Inter with `tabular-nums` — mono only on `<code>`-style identifiers.
 
 Scale: `10 / 12 / 14 / 16 / 18 / 20 / 24 / 32 / 48 / 64`. No in-between sizes. If you reach for `15px`, the scale isn't speaking — fix the scale.
 
@@ -136,7 +140,7 @@ Eyebrows: uppercase, `letter-spacing: 0.15em`, gold, 12px. They orient the eye t
 
 Vertical rhythm matters more than horizontal. Get section spacing right first.
 
-Touch targets: 40px minimum on desktop, 44px on mobile.
+Touch targets: `--space-touch-desktop = 40px` (desktop minimum), `--space-touch-mobile = 44px` (mobile minimum). Both sit off the `4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96 / 128` scale; named as explicit exception tokens rather than scale extensions or preset escape-hatches.
 
 ### Radii
 
